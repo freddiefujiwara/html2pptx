@@ -49,6 +49,21 @@ describe('html2ppt', () => {
       expect(html2ppt.formatError(err2)).toBe('Error: The URL is not valid or the website could not be reached. Please check your input.');
     });
 
+    it('should format missing required argument error', () => {
+      const err = new Error("error: missing required argument 'input'");
+      expect(html2ppt.formatError(err)).toBe('Error: Please provide an HTML file path or URL.');
+    });
+
+    it('should format invalid wait strategy error', () => {
+      const err = new Error("waitUntil: expected one of (load|domcontentloaded|networkidle|commit)");
+      expect(html2ppt.formatError(err)).toBe('Error: Invalid wait strategy. Please use one of: load, domcontentloaded, networkidle, commit.');
+    });
+
+    it('should format other commander errors', () => {
+      const err = new Error("error: unknown option '--invalid'");
+      expect(html2ppt.formatError(err)).toBe("Error: Unknown option '--invalid'");
+    });
+
     it('should format unknown errors', () => {
       const err = new Error('Something weird');
       expect(html2ppt.formatError(err)).toBe('Error: Something weird');
@@ -235,7 +250,7 @@ describe('html2ppt', () => {
         const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
         const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {});
 
-        await html2ppt.main();
+        await expect(html2ppt.main()).rejects.toThrow("missing required argument 'input'");
 
         process.argv = originalArgv;
         logSpy.mockRestore();

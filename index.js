@@ -73,8 +73,20 @@ function formatError(err) {
   if (message.includes("net::ERR_")) {
     return "Error: The URL is not valid or the website could not be reached. Please check your input.";
   }
+  if (message.includes("missing required argument 'input'")) {
+    return "Error: Please provide an HTML file path or URL.";
+  }
+  if (message.includes("waitUntil: expected one of")) {
+    return "Error: Invalid wait strategy. Please use one of: load, domcontentloaded, networkidle, commit.";
+  }
 
-  return `Error: ${message}`;
+  let displayMessage = message;
+  if (displayMessage.startsWith("error: ")) {
+    displayMessage = displayMessage.substring(7);
+    displayMessage = displayMessage.charAt(0).toUpperCase() + displayMessage.slice(1);
+  }
+
+  return `Error: ${displayMessage}`;
 }
 
 async function pngToPptx({ pngPath, pptxPath, widescreen = true }, _PptxGenJS = PptxGenJS) {
@@ -102,6 +114,10 @@ async function pngToPptx({ pngPath, pptxPath, widescreen = true }, _PptxGenJS = 
 
 async function main(_toPageUrl = toPageUrl, _renderToPng = renderToPng, _pngToPptx = pngToPptx) {
   const program = new Command();
+  program.exitOverride();
+  program.configureOutput({
+    writeErr: () => {},
+  });
 
   program
     .argument("<input>", "HTML file path or URL (http/https)")
@@ -117,11 +133,6 @@ async function main(_toPageUrl = toPageUrl, _renderToPng = renderToPng, _pngToPp
   program.parse(process.argv);
   const opts = program.opts();
   const input = program.args[0];
-
-  if (!input) {
-    program.help();
-    return;
-  }
 
   const pptxPath = path.resolve(opts.out);
   const pngPath = opts.png ? path.resolve(opts.png) : pptxPath.replace(/\.pptx$/i, "") + ".png";
@@ -161,6 +172,11 @@ module.exports = {
 /* v8 ignore start */
 if (require.main === module) {
   main().catch((e) => {
+    if (e.code && e.code.startsWith("commander.")) {
+      if (e.code === "commander.helpDisplayed" || e.code === "commander.help" || e.code === "commander.version") {
+        return;
+      }
+    }
     console.error(formatError(e));
     process.exit(1);
   });

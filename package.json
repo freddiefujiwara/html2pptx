@@ -1,6 +1,6 @@
 {
   "name": "html2ppt",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Convert HTML to PPTX using Playwright and PptxGenJS",
   "main": "index.js",
   "bin": {
