@@ -172,7 +172,7 @@ describe('html2ppt', () => {
       const pngToPptxSpy = vi.spyOn(html2ppt, 'pngToPptx').mockResolvedValue(true);
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-      await html2ppt.main();
+      await html2ppt.main(toPageUrlSpy, renderToPngSpy, pngToPptxSpy);
 
       expect(toPageUrlSpy).toHaveBeenCalledWith('http://example.com');
       expect(renderToPngSpy).toHaveBeenCalled();
@@ -207,7 +207,7 @@ describe('html2ppt', () => {
         const pngToPptxSpy = vi.spyOn(html2ppt, 'pngToPptx').mockResolvedValue(true);
         const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-        await html2ppt.main();
+        await html2ppt.main(toPageUrlSpy, renderToPngSpy, pngToPptxSpy);
 
         expect(renderToPngSpy).toHaveBeenCalledWith(expect.objectContaining({
             selector: null

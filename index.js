@@ -78,7 +78,7 @@ async function pngToPptx({ pngPath, pptxPath, widescreen = true }, _PptxGenJS = 
   await pptx.writeFile({ fileName: pptxPath });
 }
 
-async function main() {
+async function main(_toPageUrl = toPageUrl, _renderToPng = renderToPng, _pngToPptx = pngToPptx) {
   const program = new Command();
 
   program
@@ -102,13 +102,13 @@ async function main() {
   const pptxPath = path.resolve(opts.out);
   const pngPath = opts.png ? path.resolve(opts.png) : pptxPath.replace(/\.pptx$/i, "") + ".png";
 
-  const pageUrl = module.exports.toPageUrl(input);
+  const pageUrl = _toPageUrl(input);
 
   let selector = opts.selector;
   // --selector "" を full page 扱いにする
   if (selector != null && selector.trim() === "") selector = null;
 
-  await module.exports.renderToPng({
+  await _renderToPng({
     pageUrl,
     pngPath,
     selector,
@@ -117,7 +117,7 @@ async function main() {
     scale: opts.scale,
   });
 
-  await module.exports.pngToPptx({ pngPath, pptxPath, widescreen: true });
+  await _pngToPptx({ pngPath, pptxPath, widescreen: true });
 
   console.log(`OK: ${pptxPath}`);
   console.log(`(intermediate) ${pngPath}`);
