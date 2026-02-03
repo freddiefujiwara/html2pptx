@@ -4,32 +4,32 @@ import { execSync } from 'child_process';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 
-const html2pptx = require('./index');
+const html2ppt = require('./index');
 
-describe('html2pptx', () => {
+describe('html2ppt', () => {
   describe('isHttpUrl', () => {
     it('should return true for http/https URLs', () => {
-      expect(html2pptx.isHttpUrl('http://example.com')).toBe(true);
-      expect(html2pptx.isHttpUrl('https://example.com')).toBe(true);
+      expect(html2ppt.isHttpUrl('http://example.com')).toBe(true);
+      expect(html2ppt.isHttpUrl('https://example.com')).toBe(true);
     });
     it('should return false for others', () => {
-      expect(html2pptx.isHttpUrl('file://test')).toBe(false);
-      expect(html2pptx.isHttpUrl(null)).toBe(false);
+      expect(html2ppt.isHttpUrl('file://test')).toBe(false);
+      expect(html2ppt.isHttpUrl(null)).toBe(false);
     });
   });
 
   describe('toPageUrl', () => {
     it('should return the same URL if it is a web URL', () => {
-      expect(html2pptx.toPageUrl('http://example.com')).toBe('http://example.com');
+      expect(html2ppt.toPageUrl('http://example.com')).toBe('http://example.com');
     });
     it('should return file:// URL for existing local file', () => {
       const mockFs = { existsSync: vi.fn().mockReturnValue(true) };
-      const result = html2pptx.toPageUrl('package.json', mockFs);
+      const result = html2ppt.toPageUrl('package.json', mockFs);
       expect(result).toMatch(/^file:\/\//);
     });
     it('should throw error if local file does not exist', () => {
       const mockFs = { existsSync: vi.fn().mockReturnValue(false) };
-      expect(() => html2pptx.toPageUrl('nonexistent.html', mockFs)).toThrow('HTML file not found');
+      expect(() => html2ppt.toPageUrl('nonexistent.html', mockFs)).toThrow('HTML file not found');
     });
   });
 
@@ -53,7 +53,7 @@ describe('html2pptx', () => {
         launch: vi.fn().mockResolvedValue(mockBrowser),
       };
 
-      await html2pptx.renderToPng({
+      await html2ppt.renderToPng({
         pageUrl: 'http://example.com',
         pngPath: 'out.png',
         selector: '.slide',
@@ -81,7 +81,7 @@ describe('html2pptx', () => {
           launch: vi.fn().mockResolvedValue(mockBrowser),
         };
 
-        await html2pptx.renderToPng({
+        await html2ppt.renderToPng({
           pageUrl: 'http://example.com',
           pngPath: 'out.png',
           selector: null,
@@ -109,7 +109,7 @@ describe('html2pptx', () => {
           launch: vi.fn().mockResolvedValue(mockBrowser),
         };
 
-        await expect(html2pptx.renderToPng({
+        await expect(html2ppt.renderToPng({
           pageUrl: 'http://example.com',
           pngPath: 'out.png',
           selector: '.notfound',
@@ -132,7 +132,7 @@ describe('html2pptx', () => {
       };
       const MockPptxGenJS = vi.fn(() => mockPptxInstance);
 
-      await html2pptx.pngToPptx({
+      await html2ppt.pngToPptx({
         pngPath: 'test.png',
         pptxPath: 'test.pptx',
         widescreen: true,
@@ -152,7 +152,7 @@ describe('html2pptx', () => {
         };
         const MockPptxGenJS = vi.fn(() => mockPptxInstance);
 
-        await html2pptx.pngToPptx({
+        await html2ppt.pngToPptx({
           pngPath: 'test.png',
           pptxPath: 'test.pptx',
           widescreen: false,
@@ -167,12 +167,12 @@ describe('html2pptx', () => {
       const originalArgv = process.argv;
       process.argv = ['node', 'index.js', 'http://example.com', '--out', 'test.pptx', '--png', 'test.png', '--selector', '.slide'];
 
-      const toPageUrlSpy = vi.spyOn(html2pptx, 'toPageUrl').mockReturnValue('http://example.com');
-      const renderToPngSpy = vi.spyOn(html2pptx, 'renderToPng').mockResolvedValue(true);
-      const pngToPptxSpy = vi.spyOn(html2pptx, 'pngToPptx').mockResolvedValue(true);
+      const toPageUrlSpy = vi.spyOn(html2ppt, 'toPageUrl').mockReturnValue('http://example.com');
+      const renderToPngSpy = vi.spyOn(html2ppt, 'renderToPng').mockResolvedValue(true);
+      const pngToPptxSpy = vi.spyOn(html2ppt, 'pngToPptx').mockResolvedValue(true);
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-      await html2pptx.main();
+      await html2ppt.main();
 
       expect(toPageUrlSpy).toHaveBeenCalledWith('http://example.com');
       expect(renderToPngSpy).toHaveBeenCalled();
@@ -191,7 +191,7 @@ describe('html2pptx', () => {
         const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
         const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {});
 
-        await html2pptx.main();
+        await html2ppt.main();
 
         process.argv = originalArgv;
         logSpy.mockRestore();
@@ -202,12 +202,12 @@ describe('html2pptx', () => {
         const originalArgv = process.argv;
         process.argv = ['node', 'index.js', 'http://example.com', '--out', 'test.pptx', '--selector', ' '];
 
-        const toPageUrlSpy = vi.spyOn(html2pptx, 'toPageUrl').mockReturnValue('http://example.com');
-        const renderToPngSpy = vi.spyOn(html2pptx, 'renderToPng').mockResolvedValue(true);
-        const pngToPptxSpy = vi.spyOn(html2pptx, 'pngToPptx').mockResolvedValue(true);
+        const toPageUrlSpy = vi.spyOn(html2ppt, 'toPageUrl').mockReturnValue('http://example.com');
+        const renderToPngSpy = vi.spyOn(html2ppt, 'renderToPng').mockResolvedValue(true);
+        const pngToPptxSpy = vi.spyOn(html2ppt, 'pngToPptx').mockResolvedValue(true);
         const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-        await html2pptx.main();
+        await html2ppt.main();
 
         expect(renderToPngSpy).toHaveBeenCalledWith(expect.objectContaining({
             selector: null
