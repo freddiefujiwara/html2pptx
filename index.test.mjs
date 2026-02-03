@@ -18,6 +18,62 @@ describe('html2ppt', () => {
     });
   });
 
+  describe('formatError', () => {
+    it('should format HTML file not found error', () => {
+      const err = new Error('HTML file not found: test.html');
+      expect(html2ppt.formatError(err)).toBe('Error: The HTML file does not exist. Please check the file path.');
+    });
+
+    it('should format Selector not found error', () => {
+      const err = new Error('Selector not found: .my-selector');
+      expect(html2ppt.formatError(err)).toBe('Error: The CSS selector was not found. Please check your --selector.');
+    });
+
+    it('should format TimeoutError', () => {
+      const err = new Error('Timeout 30000ms exceeded');
+      err.name = 'TimeoutError';
+      expect(html2ppt.formatError(err)).toBe('Error: The page took too long to load. Please try a larger --timeout.');
+    });
+
+    it('should format ENOENT error', () => {
+      const err = new Error('ENOENT: no such file or directory');
+      err.code = 'ENOENT';
+      expect(html2ppt.formatError(err)).toBe('Error: Could not save the file. Please check the folder path and your permissions.');
+    });
+
+    it('should format net::ERR_ error', () => {
+      const err = new Error('net::ERR_INVALID_URL');
+      expect(html2ppt.formatError(err)).toBe('Error: The URL is not valid or the website could not be reached. Please check your input.');
+
+      const err2 = new Error('net::ERR_NAME_NOT_RESOLVED');
+      expect(html2ppt.formatError(err2)).toBe('Error: The URL is not valid or the website could not be reached. Please check your input.');
+    });
+
+    it('should format missing required argument error', () => {
+      const err = new Error("error: missing required argument 'input'");
+      expect(html2ppt.formatError(err)).toBe('Error: Please provide an HTML file path or URL.');
+    });
+
+    it('should format invalid wait strategy error', () => {
+      const err = new Error("waitUntil: expected one of (load|domcontentloaded|networkidle|commit)");
+      expect(html2ppt.formatError(err)).toBe('Error: Invalid wait strategy. Please use one of: load, domcontentloaded, networkidle, commit.');
+    });
+
+    it('should format other commander errors', () => {
+      const err = new Error("error: unknown option '--invalid'");
+      expect(html2ppt.formatError(err)).toBe("Error: Unknown option '--invalid'");
+    });
+
+    it('should format unknown errors', () => {
+      const err = new Error('Something weird');
+      expect(html2ppt.formatError(err)).toBe('Error: Something weird');
+    });
+
+    it('should handle non-Error objects', () => {
+      expect(html2ppt.formatError('string error')).toBe('Error: String error');
+    });
+  });
+
   describe('toPageUrl', () => {
     it('should return the same URL if it is a web URL', () => {
       expect(html2ppt.toPageUrl('http://example.com')).toBe('http://example.com');
@@ -194,7 +250,7 @@ describe('html2ppt', () => {
         const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
         const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {});
 
-        await html2ppt.main();
+        await expect(html2ppt.main()).rejects.toThrow("missing required argument 'input'");
 
         process.argv = originalArgv;
         logSpy.mockRestore();
