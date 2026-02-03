@@ -55,6 +55,28 @@ async function renderToPng({ pageUrl, pngPath, selector, width, height, scale, t
   await browser.close();
 }
 
+function formatError(err) {
+  const message = err.message || String(err);
+
+  if (message.includes("HTML file not found")) {
+    return "Error: The HTML file does not exist. Please check the file path.";
+  }
+  if (message.includes("Selector not found")) {
+    return "Error: The CSS selector was not found. Please check your --selector.";
+  }
+  if (err.name === "TimeoutError") {
+    return "Error: The page took too long to load. Please try a larger --timeout.";
+  }
+  if (err.code === "ENOENT") {
+    return "Error: Could not save the file. Please check the folder path and your permissions.";
+  }
+  if (message.includes("net::ERR_")) {
+    return "Error: The URL is not valid or the website could not be reached. Please check your input.";
+  }
+
+  return `Error: ${message}`;
+}
+
 async function pngToPptx({ pngPath, pptxPath, widescreen = true }, _PptxGenJS = PptxGenJS) {
   const pptx = new _PptxGenJS();
 
@@ -130,6 +152,7 @@ async function main(_toPageUrl = toPageUrl, _renderToPng = renderToPng, _pngToPp
 module.exports = {
   isHttpUrl,
   toPageUrl,
+  formatError,
   renderToPng,
   pngToPptx,
   main
@@ -138,7 +161,7 @@ module.exports = {
 /* v8 ignore start */
 if (require.main === module) {
   main().catch((e) => {
-    console.error(e);
+    console.error(formatError(e));
     process.exit(1);
   });
 }
