@@ -70,7 +70,7 @@ describe('html2ppt', () => {
     });
 
     it('should handle non-Error objects', () => {
-      expect(html2ppt.formatError('string error')).toBe('Error: string error');
+      expect(html2ppt.formatError('string error')).toBe('Error: String error');
     });
   });
 

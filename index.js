@@ -9,117 +9,77 @@ let PptxGenJS = require("pptxgenjs");
 if (PptxGenJS.default) PptxGenJS = PptxGenJS.default;
 const { Command } = require("commander");
 
-function isHttpUrl(s) {
+const isHttpUrl = (s) => {
   try {
     const u = new URL(s);
     return u.protocol === "http:" || u.protocol === "https:";
   } catch {
     return false;
   }
-}
+};
 
-function toPageUrl(input, _fs = fs) {
+const toPageUrl = (input, _fs = fs) => {
   if (isHttpUrl(input)) return input;
-
   const p = path.resolve(input);
-  if (!_fs.existsSync(p)) {
-    throw new Error(`HTML file not found: ${p}`);
-  }
-  return pathToFileURL(p).toString(); // file://... に変換
-}
+  if (!_fs.existsSync(p)) throw new Error(`HTML file not found: ${p}`);
+  return pathToFileURL(p).toString();
+};
 
-async function renderToPng({ pageUrl, pngPath, selector, width, height, scale, timeout, waitUntil }, _chromium = chromium) {
-  // console.log('DEBUG: _chromium.launch is', _chromium.launch.toString());
+const renderToPng = async ({ pageUrl, pngPath, selector, width, height, scale, timeout, waitUntil }, _chromium = chromium) => {
   const browser = await _chromium.launch();
-  const page = await browser.newPage({
-    viewport: { width, height },
-    deviceScaleFactor: scale,
-  });
+  const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: scale });
 
-  await page.goto(pageUrl, { waitUntil: waitUntil || "networkidle", timeout: timeout || 30000 });
-  await page.waitForTimeout(800);
+  try {
+    await page.goto(pageUrl, { waitUntil: waitUntil || "networkidle", timeout: timeout || 30000 });
+    await page.waitForTimeout(800);
 
-  if (selector) {
-    const loc = page.locator(selector);
-    const count = await loc.count();
-    // console.log('DEBUG: count is', count);
-    if (count === 0) {
-      await browser.close();
-      throw new Error(`Selector not found: ${selector}`);
+    if (selector) {
+      const loc = page.locator(selector);
+      if ((await loc.count()) === 0) throw new Error(`Selector not found: ${selector}`);
+      await loc.first().screenshot({ path: pngPath });
+    } else {
+      await page.screenshot({ path: pngPath, fullPage: true });
     }
-    await loc.first().screenshot({ path: pngPath });
-  } else {
-    await page.screenshot({ path: pngPath, fullPage: true });
+  } finally {
+    await browser.close();
   }
+};
 
-  await browser.close();
-}
-
-function formatError(err) {
+const formatError = (err) => {
   const message = err.message || String(err);
+  const rules = [
+    { key: "HTML file not found", msg: "The HTML file does not exist. Please check the file path." },
+    { key: "Selector not found", msg: "The CSS selector was not found. Please check your --selector." },
+    { test: () => err.name === "TimeoutError", msg: "The page took too long to load. Please try a larger --timeout." },
+    { test: () => err.code === "ENOENT", msg: "Could not save the file. Please check the folder path and your permissions." },
+    { key: "net::ERR_", msg: "The URL is not valid or the website could not be reached. Please check your input." },
+    { key: "missing required argument 'input'", msg: "Please provide an HTML file path or URL." },
+    { key: "waitUntil: expected one of", msg: "Invalid wait strategy. Please use one of: load, domcontentloaded, networkidle, commit." },
+  ];
 
-  if (message.includes("HTML file not found")) {
-    return "Error: The HTML file does not exist. Please check the file path.";
-  }
-  if (message.includes("Selector not found")) {
-    return "Error: The CSS selector was not found. Please check your --selector.";
-  }
-  if (err.name === "TimeoutError") {
-    return "Error: The page took too long to load. Please try a larger --timeout.";
-  }
-  if (err.code === "ENOENT") {
-    return "Error: Could not save the file. Please check the folder path and your permissions.";
-  }
-  if (message.includes("net::ERR_")) {
-    return "Error: The URL is not valid or the website could not be reached. Please check your input.";
-  }
-  if (message.includes("missing required argument 'input'")) {
-    return "Error: Please provide an HTML file path or URL.";
-  }
-  if (message.includes("waitUntil: expected one of")) {
-    return "Error: Invalid wait strategy. Please use one of: load, domcontentloaded, networkidle, commit.";
-  }
+  const matched = rules.find((r) => (r.key ? message.includes(r.key) : r.test()));
+  if (matched) return `Error: ${matched.msg}`;
 
-  let displayMessage = message;
-  if (displayMessage.startsWith("error: ")) {
-    displayMessage = displayMessage.substring(7);
-    displayMessage = displayMessage.charAt(0).toUpperCase() + displayMessage.slice(1);
-  }
-
+  let displayMessage = message.startsWith("error: ") ? message.substring(7) : message;
+  displayMessage = displayMessage.charAt(0).toUpperCase() + displayMessage.slice(1);
   return `Error: ${displayMessage}`;
-}
+};
 
-async function pngToPptx({ pngPath, pptxPath, widescreen = true }, _PptxGenJS = PptxGenJS) {
+const pngToPptx = async ({ pngPath, pptxPath, widescreen = true }, _PptxGenJS = PptxGenJS) => {
   const pptx = new _PptxGenJS();
-
-  // 16:9 (13.333 x 7.5 inch) を明示定義
   if (widescreen) {
     pptx.defineLayout({ name: "WIDE_16x9", width: 13.333, height: 7.5 });
     pptx.layout = "WIDE_16x9";
   }
-
-  const slide = pptx.addSlide();
-
-  // スライド全面に貼る
-  slide.addImage({
-    path: pngPath,
-    x: 0,
-    y: 0,
-    w: 13.333,
-    h: 7.5,
-  });
-
+  pptx.addSlide().addImage({ path: pngPath, x: 0, y: 0, w: 13.333, h: 7.5 });
   await pptx.writeFile({ fileName: pptxPath });
-}
+};
 
-async function main(_toPageUrl = toPageUrl, _renderToPng = renderToPng, _pngToPptx = pngToPptx) {
+const main = async (_toPageUrl = toPageUrl, _renderToPng = renderToPng, _pngToPptx = pngToPptx) => {
   const program = new Command();
-  program.exitOverride();
-  program.configureOutput({
-    writeErr: () => {},
-  });
-
   program
+    .exitOverride()
+    .configureOutput({ writeErr: () => {} })
     .argument("<input>", "HTML file path or URL (http/https)")
     .option("-o, --out <pptx>", "Output pptx path", "slide.pptx")
     .option("--png <png>", "Intermediate png path (default: out with .png)")
@@ -128,20 +88,15 @@ async function main(_toPageUrl = toPageUrl, _renderToPng = renderToPng, _pngToPp
     .option("--height <n>", "Viewport height", (v) => parseInt(v, 10), 540)
     .option("--scale <n>", "Device scale factor", (v) => parseInt(v, 10), 2)
     .option("--timeout <n>", "Navigation timeout in ms", (v) => parseInt(v, 10), 30000)
-    .option("--wait <strategy>", "Wait strategy: load, domcontentloaded, networkidle, commit", "networkidle");
+    .option("--wait <strategy>", "Wait strategy: load, domcontentloaded, networkidle, commit", "networkidle")
+    .parse(process.argv);
 
-  program.parse(process.argv);
   const opts = program.opts();
   const input = program.args[0];
-
   const pptxPath = path.resolve(opts.out);
   const pngPath = opts.png ? path.resolve(opts.png) : pptxPath.replace(/\.pptx$/i, "") + ".png";
-
   const pageUrl = _toPageUrl(input);
-
-  let selector = opts.selector;
-  // --selector "" を full page 扱いにする
-  if (selector != null && selector.trim() === "") selector = null;
+  const selector = opts.selector?.trim() || null;
 
   await _renderToPng({
     pageUrl,
@@ -155,10 +110,8 @@ async function main(_toPageUrl = toPageUrl, _renderToPng = renderToPng, _pngToPp
   });
 
   await _pngToPptx({ pngPath, pptxPath, widescreen: true });
-
-  console.log(`OK: ${pptxPath}`);
-  console.log(`(intermediate) ${pngPath}`);
-}
+  console.log(`OK: ${pptxPath}\n(intermediate) ${pngPath}`);
+};
 
 module.exports = {
   isHttpUrl,
