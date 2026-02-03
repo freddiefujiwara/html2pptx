@@ -1,10 +1,10 @@
 {
-  "name": "@freddiefujiwara/html2pptx",
+  "name": "html2ppt",
   "version": "1.0.0",
   "description": "Convert HTML to PPTX using Playwright and PptxGenJS",
   "main": "index.js",
   "bin": {
-    "html2pptx": "index.js"
+    "html2ppt": "index.js"
   },
   "files": [
     "index.js"

@@ -1,4 +1,4 @@
-# @freddiefujiwara/html2pptx
+# html2ppt
 
 Convert HTML to PowerPoint (PPTX) easily.
 
@@ -7,8 +7,13 @@ This tool uses [Playwright](https://playwright.dev/) to take a screenshot of you
 ## Installation
 
 ```bash
-npm i -g @freddiefujiwara/html2pptx
+npm i -g html2ppt
+# Install Playwright browser
+npx playwright install --with-deps chromium
 ```
+
+> **Tip:** If you encounter SSL errors during Playwright installation, you can try:
+> `NODE_TLS_REJECT_UNAUTHORIZED=0 npx playwright install --with-deps chromium`
 
 ## Usage
 
@@ -17,13 +22,13 @@ You can use it with a local HTML file or a URL.
 ### Local file
 
 ```bash
-html2pptx ./index.html
+html2ppt ./index.html
 ```
 
 ### URL
 
 ```bash
-html2pptx https://example.com
+html2ppt https://example.com
 ```
 
 ### Options
