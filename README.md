@@ -40,6 +40,8 @@ html2ppt https://example.com
 - `--width <n>`: Viewport width (default: `960`)
 - `--height <n>`: Viewport height (default: `540`)
 - `--scale <n>`: Resolution scale (default: `2`)
+- `--timeout <n>`: Navigation timeout in ms (default: `30000`)
+- `--wait <strategy>`: Wait strategy: `load`, `domcontentloaded`, `networkidle`, `commit` (default: `networkidle`)
 
 ## License
 

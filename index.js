@@ -28,7 +28,7 @@ function toPageUrl(input, _fs = fs) {
   return pathToFileURL(p).toString(); // file://... に変換
 }
 
-async function renderToPng({ pageUrl, pngPath, selector, width, height, scale }, _chromium = chromium) {
+async function renderToPng({ pageUrl, pngPath, selector, width, height, scale, timeout, waitUntil }, _chromium = chromium) {
   // console.log('DEBUG: _chromium.launch is', _chromium.launch.toString());
   const browser = await _chromium.launch();
   const page = await browser.newPage({
@@ -36,7 +36,7 @@ async function renderToPng({ pageUrl, pngPath, selector, width, height, scale },
     deviceScaleFactor: scale,
   });
 
-  await page.goto(pageUrl, { waitUntil: "networkidle" });
+  await page.goto(pageUrl, { waitUntil: waitUntil || "networkidle", timeout: timeout || 30000 });
   await page.waitForTimeout(800);
 
   if (selector) {
@@ -88,7 +88,9 @@ async function main(_toPageUrl = toPageUrl, _renderToPng = renderToPng, _pngToPp
     .option("--selector <css>", "CSS selector to capture. Use empty for full-page.", "")
     .option("--width <n>", "Viewport width", (v) => parseInt(v, 10), 960)
     .option("--height <n>", "Viewport height", (v) => parseInt(v, 10), 540)
-    .option("--scale <n>", "Device scale factor", (v) => parseInt(v, 10), 2);
+    .option("--scale <n>", "Device scale factor", (v) => parseInt(v, 10), 2)
+    .option("--timeout <n>", "Navigation timeout in ms", (v) => parseInt(v, 10), 30000)
+    .option("--wait <strategy>", "Wait strategy: load, domcontentloaded, networkidle, commit", "networkidle");
 
   program.parse(process.argv);
   const opts = program.opts();
@@ -115,6 +117,8 @@ async function main(_toPageUrl = toPageUrl, _renderToPng = renderToPng, _pngToPp
     width: opts.width,
     height: opts.height,
     scale: opts.scale,
+    timeout: opts.timeout,
+    waitUntil: opts.wait,
   });
 
   await _pngToPptx({ pngPath, pptxPath, widescreen: true });
